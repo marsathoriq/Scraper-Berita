@@ -1,5 +1,7 @@
 import requests
 import unicodedata
+import pandas as pd
+import csv
 from bs4 import BeautifulSoup
 from datetime import datetime
 
@@ -11,7 +13,21 @@ def get_html_content(url):
   return soup
 
 def get_n_urls(count):
-    pass
+    urls = []
+    if count < 1:
+        return urls
+
+    page = 1
+    while True:
+        soup = get_html_content(URL_TEMPLATE.format(page))
+        contents = soup.find_all("div", class_="article__list")  # get article list
+        for content in contents:
+            if len(urls) == count:
+                return urls
+            urls.append(content.find('a').attrs['href'])
+
+        page += 1
+
 
 def get_urls_by_date(date_str):
     urls = []
@@ -81,12 +97,13 @@ def get_news_attr(url):
     }
 
 if __name__ == '__main__':
-    ## Get list of urls
-    date = '06/05/2021'
-    urls = get_urls_by_date(date)
-    
-    ## scrap first url
-    news_attr = get_news_attr(urls[0] + '?page=all')
-    print(news_attr)
+    ## Scrap by date example
+    # date = '06/05/2021'
+    # urls = get_urls_by_date(date)
+    # news_attr = get_news_attr(urls[0] + '?page=all')
+    # print(news_attr)
 
-
+    ## Scrap n news example
+    urls = get_n_urls(100)
+    df = pd.DataFrame(urls, columns=['Link'])
+    df.to_csv('kompas.csv', sep = ',', index = False, quoting=csv.QUOTE_ALL)    
