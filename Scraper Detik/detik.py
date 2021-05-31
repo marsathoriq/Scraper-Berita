@@ -41,14 +41,20 @@ def get_news_attr(url):
     news_attr = get_html_content(url)
 
     # get date
-    datetime_str = news_attr.find("div", attrs={"class": "detail__date"}).text.split(
-        ","
-    )[1]
-    date_str = " ".join(datetime_str.split()[:3])
+    try:
+        datetime_str = news_attr.find(
+            "div", attrs={"class": "detail__date"}
+        ).text.split(",")[1]
+        date_str = " ".join(datetime_str.split()[:3])
+    except:
+        date_str = ""
 
     # get title
-    title_content = news_attr.find("h1", attrs={"class": "detail__title"})
-    title = " ".join(title_content.text.split())
+    try:
+        title_content = news_attr.find("h1", attrs={"class": "detail__title"})
+        title = " ".join(title_content.text.split())
+    except:
+        title = ""
 
     # get image
     try:
@@ -62,7 +68,7 @@ def get_news_attr(url):
         tag_content = news_attr.find("div", attrs={"class": "nav"})
         tags = tag_content.find_all("a", attrs={"class": "nav__item"})
         all_tags = []
-        for i, tag in enumerate(tags):
+        for _, tag in enumerate(tags):
             all_tags = all_tags + [tag.text]
     except:
         all_tags = []
@@ -77,35 +83,38 @@ def get_news_attr(url):
     except:
         total_page = 1
 
-    cnt_paragraph = 0
-    news_content = {}
-    for i in range(1, total_page + 1):
-        if i != 1:
-            news_attr = get_html_content(url + "/" + str(i))
-        news_texts = news_attr.find(
-            "div", attrs={"class": "detail__body-text itp_bodycontent"}
-        )
-        paragraphs = news_texts.find_all("p")
+    try:
+        cnt_paragraph = 0
+        news_content = {}
+        for i in range(1, total_page + 1):
+            if i != 1:
+                news_attr = get_html_content(url + "/" + str(i))
+            news_texts = news_attr.find(
+                "div", attrs={"class": "detail__body-text itp_bodycontent"}
+            )
+            paragraphs = news_texts.find_all("p")
 
-        id = 0
-        cnt = 0
-        while id < len(paragraphs):
-            # print(paragraphs[id])
-            if paragraphs[id].text.lower() in [
-                "simak selengkapnya di halaman selanjutnya.",
-                "\n",
-            ]:
-                id += 1
-            else:
-                news_content[cnt_paragraph + cnt] = paragraphs[id].text
-                cnt += 1
-                id += 1
+            id = 0
+            cnt = 0
+            while id < len(paragraphs):
+                # print(paragraphs[id])
+                if paragraphs[id].text.lower() in [
+                    "simak selengkapnya di halaman selanjutnya.",
+                    "\n",
+                ]:
+                    id += 1
+                else:
+                    news_content[cnt_paragraph + cnt] = paragraphs[id].text
+                    cnt += 1
+                    id += 1
 
-        cnt_paragraph += cnt
+            cnt_paragraph += cnt
+    except:
+        news_content = {}
 
     return {
         "portal": "detik.com",
-        "date": date,
+        "date": date_str,
         "link": url,
         "title": title,
         "image": link_image,
