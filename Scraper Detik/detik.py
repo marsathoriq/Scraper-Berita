@@ -32,6 +32,7 @@ def get_urls_by_date(date):
 
         all_list_url = all_list_url + list_url
     all_list_url = [news for news in all_list_url if "/detiktv/" not in news]
+    all_list_url = [news for news in all_list_url if "/foto" not in news]
     return all_list_url
 
 
