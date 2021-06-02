@@ -96,6 +96,14 @@ def get_news_attr(url):
         'tags': tags_list,
     }
 
+def get_kompas_dataframe_from_date(date):
+    url_list = get_urls_by_date(date)
+    all_data = []
+    for url in url_list:
+        all_data += [get_news_attr(url  + '?page=all' )]
+    
+    return pd.DataFrame(all_data)
+
 if __name__ == '__main__':
     ## Scrap by date example
     date = '23/05/2021'
