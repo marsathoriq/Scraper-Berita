@@ -128,7 +128,7 @@ def get_detik_dataframe_from_date(date):
     all_data = []
     for url in url_list:
         all_data += [get_news_attr(url)]
-    
+
     return pd.DataFrame(all_data)
 
 if __name__ == "__main__":

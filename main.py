@@ -3,8 +3,8 @@ import tensorflow as tf
 import pandas as pd
 from google.cloud import storage
 from datetime import datetime
-from scraper.detik import get_detik_dataframe_from_date
-from scraper.kompas import get_kompas_dataframe_from_date
+from detik import get_detik_dataframe_from_date
+from kompas import get_kompas_dataframe_from_date
 
 ## Download model
 def download_model(bucket_name, source_dir, destination_folder, model_version):
@@ -64,45 +64,46 @@ def clean_text(text):
     return text
 
 def vectorize_verif(data):
-  bow_data = CountVectorizer.transform(data['content'])
-  bow_data = pd.DataFrame.sparse.from_spmatrix(bow_data,columns=CountVectorizer.get_feature_names())
-  return bow_data
+    bow_data = CountVectorizer.transform(data['content'])
+    bow_data = pd.DataFrame.sparse.from_spmatrix(bow_data,columns=CountVectorizer.get_feature_names())
+    return bow_data
 
 def predict_data(data):
-  data['content'] = data['content'].apply(clean_text)
-  bow_data = vectorize_verif(data)
-  return model.predict(bow_data).round()
+    data['content'] = data['content'].apply(clean_text)
+    bow_data = vectorize_verif(data)
+    return model.predict(bow_data).round()
 
-## Get news
-date_now = datetime.today().strftime('%d/%m/%Y')
-detik_news = get_detik_dataframe_from_date(date_now)
-kompas_news = get_kompas_dataframe_from_date(date_now)
-news_data = pd.concat([detik_news, kompas_news]).reset_index(drop=True)
+def full_predict(event, context):
+    ## Get news
+    date_now = datetime.today().strftime('%d/%m/%Y')
+    detik_news = get_detik_dataframe_from_date(date_now)
+    kompas_news = get_kompas_dataframe_from_date(date_now)
+    news_data = pd.concat([detik_news, kompas_news]).reset_index(drop=True)
 
-## Preprocess
-news_data['content'] = detik_news['content'].apply(get_content)
-news_data['Len'] = news_data['content'].apply(check_len)
-news_data = news_data[news_data['Len'] > 10].reset_index(drop=True)
+    ## Preprocess
+    news_data['content'] = detik_news['content'].apply(get_content)
+    news_data['Len'] = news_data['content'].apply(check_len)
+    news_data = news_data[news_data['Len'] > 10].reset_index(drop=True)
 
-## Load tensorflow model
-dest_folder = '/tmp/'
-download_dir = download_model(
-    bucket_name = os.environ['BUCKET_NAME'],
-    source_dir = 'model',
-    destination_folder = dest_folder,
-    model_version = '1'
-)
+    ## Load tensorflow model
+    dest_folder = '/tmp/'
+    download_dir = download_model(
+        bucket_name = os.environ['BUCKET_NAME'],
+        source_dir = 'model',
+        destination_folder = dest_folder,
+        model_version = '1'
+    )
 
-dest_vectorizer = os.path.join(dest_folder, 'CountVectorizer.pkl')
-download_vectorizer = download_blob(
-    bucket_name = os.environ['BUCKET_NAME'],
-    source_blob_name = 'CountVectorizer.pkl',
-    destination_file_name = dest_folder
-)
+    dest_vectorizer = os.path.join(dest_folder, 'CountVectorizer.pkl')
+    download_vectorizer = download_blob(
+        bucket_name = os.environ['BUCKET_NAME'],
+        source_blob_name = 'CountVectorizer.pkl',
+        destination_file_name = dest_folder
+    )
 
-CountVectorizer = joblib.load(dest_vectorizer)  
-stop_words = open("stopword.txt", "r").read().split()
-model = tf.keras.models.load_model('model')
+    CountVectorizer = joblib.load(dest_vectorizer)  
+    stop_words = open("stopword.txt", "r").read().split()
+    model = tf.keras.models.load_model('model')
 
-pred = predict_data(news_data)
-print(pred)
+    pred = predict_data(news_data)
+    print(pred)
