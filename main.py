@@ -6,11 +6,13 @@ import operator
 import numpy as np
 import tensorflow as tf
 import pandas as pd
+import sqlalchemy
 
 from google.cloud import storage
-from datetime import datetime
+from datetime import datetime, timedelta
 from detik import get_detik_dataframe_from_date
 from kompas import get_kompas_dataframe_from_date
+from database import init_connection_engine
 
 
 ## Download model
@@ -89,8 +91,17 @@ def change_label(value):
         return 0
 
 def full_predict(event, context):
+    yesterday_date = datetime.now() - timedelta(1)
+    date_now = datetime.strftime(yesterday_date, '%d/%m/%Y')
+    if isinstance(event, dict) and not(event.get('attributes') is None) :
+        date_now = event.get('attributes').get('date')
+    print(date_now)
+    print(event)
+
+    datetime_obj_now = datetime.strptime(date_now, '%d/%m/%Y')
+    date_sql_now = datetime_obj_now.strftime('%Y-%m-%d')
+
     ## Get news
-    date_now = datetime.today().strftime('%d/%m/%Y')
     detik_news = get_detik_dataframe_from_date(date_now)
     kompas_news = get_kompas_dataframe_from_date(date_now)
     news_data = pd.concat([detik_news, kompas_news]).reset_index(drop=True)
@@ -173,6 +184,9 @@ def full_predict(event, context):
     
     print(news_data)
 
+    # Filter news_data that only related to jakarta government
+    news_data = news_data[news_data['jakarta'] == 1]
+
     data_positif = news_data[news_data['sentiment'] == 1]
     data_negatif = news_data[news_data['sentiment'] == -1]
 
@@ -191,4 +205,61 @@ def full_predict(event, context):
     print(sorted_cnt_positive)
     print(sorted_cnt_negative)
 
-    ## TODO:Insert to DB
+    ## Insert to portal table
+    db = init_connection_engine()
+    with db.connect() as conn:
+        for _, row in news_data.iterrows():
+            stmt = sqlalchemy.text(
+                "INSERT INTO portals (portal, date, link, title, image, content, sentiment, id_category) "
+                "VALUES(:portal, :date, :link, :title, :image, :content, :sentiment, :id_category)"
+            )
+            result = conn.execute(
+                stmt,
+                portal = row['portal'],
+                date = date_sql_now,
+                link = row['link'],
+                title = row['title'],
+                image = row['image'],
+                content = row['content'],
+                sentiment = row['sentiment'],
+                id_category = row['topic']
+            )
+            portal_id = result.lastrowid
+            for tag in row['tags']:
+                stmt_tag = sqlalchemy.text(
+                    "INSERT INTO tags (id_portal, tag) "
+                    "VALUES(:id_portal, :tag)"
+                )
+                conn.execute(
+                    stmt_tag,
+                    id_portal = portal_id,
+                    tag = tag
+                )
+        
+        for item in sorted_cnt_positive:
+            stmt = sqlalchemy.text(
+                "INSERT INTO words_positif (word, value, date, id_category) "
+                "VALUES(:word, :value, :date, 0)"
+            )
+            conn.execute(
+                stmt,
+                word = item[0],
+                value = item[1],
+                date = date_sql_now,
+            )
+
+        for item in sorted_cnt_negative:
+            stmt = sqlalchemy.text(
+                "INSERT INTO words_negatif (word, value, date, id_category) "
+                "VALUES(:word, :value, :date, 0)"
+            )
+            conn.execute(
+                stmt,
+                word = item[0],
+                value = item[1],
+                date = date_sql_now,
+            )
+
+
+if __name__ == '__main__':
+    full_predict({'attributes': {'date': '05/05/2021'}}, 'context')

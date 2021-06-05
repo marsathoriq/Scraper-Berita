@@ -36,7 +36,7 @@ def get_urls_by_date(date):
     return all_list_url
 
 
-def get_news_attr(url):
+def get_news_attr(url, date):
 
     news_attr = get_html_content(url)
 
@@ -114,7 +114,7 @@ def get_news_attr(url):
 
     return {
         "portal": "detik.com",
-        "date": date_str,
+        "date": date,
         "link": url,
         "title": title,
         "image": link_image,
@@ -127,8 +127,7 @@ def get_detik_dataframe_from_date(date):
     url_list = get_urls_by_date(date)
     all_data = []
     for url in url_list:
-        all_data += [get_news_attr(url)]
-        break
+        all_data += [get_news_attr(url, date)]
 
     return pd.DataFrame(all_data)
 
