@@ -187,23 +187,32 @@ def full_predict(event, context):
     # Filter news_data that only related to jakarta government
     news_data = news_data[news_data['jakarta'] == 1]
 
-    data_positif = news_data[news_data['sentiment'] == 1]
-    data_negatif = news_data[news_data['sentiment'] == -1]
+    data_positif = news_data[news_data['sentiment'] == 1].groupby('topic')
+    data_negatif = news_data[news_data['sentiment'] == -1].groupby('topic')
 
     cnt_tags_positive = {}
-    for row in data_positif.itertuples():
-        for tag in row.tags:
-            cnt_tags_positive[tag] = cnt_tags_positive.get(tag, 0) + 1
+    for topic, group in data_positif:
+        value = {}
+        for row in group.itertuples():
+            for tag in row.tags:
+                value[tag] = value.get(tag, 0) + 1 
+        
+        cnt_tags_positive[topic] = value
 
     cnt_tags_negative = {}
-    for row in data_negatif.itertuples():
-        for tag in row.tags:
-            cnt_tags_negative[tag] = cnt_tags_negative.get(tag, 0) + 1
+    for topic, group in data_negatif:
+        value = {}
+        for row in group.itertuples():
+            for tag in row.tags:
+                value[tag] = value.get(tag, 0) + 1 
+        
+        cnt_tags_negative[topic] = value
     
-    sorted_cnt_positive = sorted(cnt_tags_positive.items(), key=operator.itemgetter(1),reverse=True)
-    sorted_cnt_negative = sorted(cnt_tags_negative.items(), key=operator.itemgetter(1),reverse=True)
-    print(sorted_cnt_positive)
-    print(sorted_cnt_negative)
+    # sorted_cnt_positive = sorted(cnt_tags_positive.items(), key=operator.itemgetter(1),reverse=True)
+    # sorted_cnt_negative = sorted(cnt_tags_negative.items(), key=operator.itemgetter(1),reverse=True)
+    
+    # print(sorted_cnt_positive)
+    # print(sorted_cnt_negative)
 
     ## Insert to portal table
     db = init_connection_engine()
@@ -236,29 +245,35 @@ def full_predict(event, context):
                     tag = tag
                 )
         
-        for item in sorted_cnt_positive:
-            stmt = sqlalchemy.text(
-                "INSERT INTO words_positif (word, value, date, id_category) "
-                "VALUES(:word, :value, :date, 0)"
-            )
-            conn.execute(
-                stmt,
-                word = item[0],
-                value = item[1],
-                date = date_sql_now,
-            )
+        for category in cnt_tags_positive:
+            tags = cnt_tags_positive.get(category)
+            for tag in tags:
+                stmt = sqlalchemy.text(
+                    "INSERT INTO words_positif (word, value, date, id_category) "
+                    "VALUES(:word, :value, :date, :category)"
+                )
+                conn.execute(
+                    stmt,
+                    word = tag,
+                    value = tags.get(tag),
+                    date = date_sql_now,
+                    category = category
+                )
 
-        for item in sorted_cnt_negative:
-            stmt = sqlalchemy.text(
-                "INSERT INTO words_negatif (word, value, date, id_category) "
-                "VALUES(:word, :value, :date, 0)"
-            )
-            conn.execute(
-                stmt,
-                word = item[0],
-                value = item[1],
-                date = date_sql_now,
-            )
+        for category in cnt_tags_negative:
+            tags = cnt_tags_negative.get(category)
+            for tag in tags:
+                stmt = sqlalchemy.text(
+                    "INSERT INTO words_negatif (word, value, date, id_category) "
+                    "VALUES(:word, :value, :date, :category)"
+                )
+                conn.execute(
+                    stmt,
+                    word = tag,
+                    value = tags.get(tag),
+                    date = date_sql_now,
+                    category = category
+                )
 
 
 if __name__ == '__main__':
