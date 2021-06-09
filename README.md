@@ -14,7 +14,7 @@ Those 3 models must be stored on Google Cloud Storage. Please refer to the []() 
 We currently run the scraper service on Google Cloud Functions. Here is the detailed step of how to deploy this service manually to Cloud Functions and what needs to be configured:
 
 ### Trigger
-We recommend to use **Cloud Pub/Sub** trigger type so you can spawn an automate scheduler for this function easily using **Cloud Scheduler**. For more information you can refer to [this link](https://cloud.google.com/community/tutorials/using-scheduler-invoke-private-functions-oidc).
+We recommend to use **Cloud Pub/Sub** trigger type so you can use an automated scheduler to invoke this function easily using **Cloud Scheduler**. For more information you can refer to [this link](https://cloud.google.com/community/tutorials/using-scheduler-invoke-private-functions-oidc).
 
 ### Runtime
 As this function will take some time to run, set the timeout to `540` . You'll also need to set up **Runtime Environment Variables** with the following key-pair configurations:
