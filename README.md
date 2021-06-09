@@ -6,7 +6,8 @@ There are 3 different models that will be loaded by the service:
 - Jakarta News Detection, detect whether news is related to Jakarta.
 - Topic categorization, Label news to 9 different categories.
 - Sentiment analysis, predict news' sentiments.
-Those 3 models must be stored on Google Cloud Storage. Please refer to the []() for detailed information
+
+Those 3 models must be stored on Google Cloud Storage. Please refer to the [VizNewz ML repo](https://github.com/marsathoriq/Klasifikasi-Berita) for detailed information on those models.
 
 ## Getting Started
 ![Cloud Function dashboard](res/dashboard.PNG)
