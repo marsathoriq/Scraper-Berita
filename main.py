@@ -57,11 +57,11 @@ def download_blob(bucket_name, source_blob_name, destination_file_name):
 
 ## Convert dict to str
 def get_content(data):
-    return " ".join(list(data.values()))
+    return "\n".join(list(data.values()))
 
 
 def check_len(data):
-    return len(data.split())
+    return len(str(data).split())
 
 
 # bersihkan teks
@@ -81,7 +81,7 @@ def clean_text(text, stop_words):
 
 ## Normalisasi kata
 def normalize(text, dic):
-    text = text.split()
+    text = str(text).split()
     for val in dic.itertuples(index=False):
         text = [w.replace(val.slang, val.formal) if w == val.slang else w for w in text]
     return " ".join(text)
@@ -112,7 +112,7 @@ def change_label(value):
 
 
 def full_predict(event, context):
-    yesterday_date = datetime.now() - timedelta(1)
+    yesterday_date = datetime.now()
     date_now = datetime.strftime(yesterday_date, "%d/%m/%Y")
     if isinstance(event, dict) and not (event.get("attributes") is None):
         date_now = event.get("attributes").get("date")
@@ -129,8 +129,9 @@ def full_predict(event, context):
 
     ## Preprocess
     news_data["content"] = detik_news["content"].apply(get_content)
-    # news_data['Len'] = news_data['content'].apply(check_len)
-    # news_data = news_data[news_data['Len'] > 10].reset_index(drop=True)
+    news_data['Len'] = news_data['content'].apply(check_len)
+    news_data = news_data[news_data['Len'] > 10].reset_index(drop=True)
+    news_data['real_content'] = news_data['content']
 
     ## Load tensorflow model for sentiment analysis
     dest_folder = "/tmp/"
@@ -256,7 +257,7 @@ def full_predict(event, context):
                 link=row["link"],
                 title=row["title"],
                 image=row["image"],
-                content=row["content"],
+                content=row["real_content"],
                 sentiment=row["sentiment"],
                 id_category=row["topic"],
             )
