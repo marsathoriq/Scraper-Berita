@@ -9,7 +9,7 @@ There are 3 different models that will be loaded by the service:
 Those 3 models must be stored on Google Cloud Storage. Please refer to the []() for detailed information
 
 ## Getting Started
-![Cloud Function dashboard](res/dashboard.png)
+![Cloud Function dashboard](res/dashboard.PNG)
 
 We currently run the scraper service on Google Cloud Functions. Here is the detailed step of how to deploy this service manually to Cloud Functions and what needs to be configured:
 
@@ -27,6 +27,6 @@ As this function will take some time to run, set the timeout to `540` . You'll a
 ### Code
 Copy all files in this directory excluding this readme and res directory. Set the runtime to **Python 3.9** and set the entry point to `full_predict`.
 
-![CF image](res/ss1.png)
+![CF image](res/ss1.PNG)
 
 Then click **Deploy** to deploy the function.
